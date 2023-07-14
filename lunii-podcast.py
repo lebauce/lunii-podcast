@@ -423,7 +423,8 @@ class Crawler:
 
 class RSSCrawler(Crawler):
 
-    def generate_pack(self, url, output):
+    def generate_pack(self, url, output, filter="", title=""):
+        rfilter = re.compile(filter.lower())
 
         feed = feedparser.parse(url)
         channel = feed['channel']
@@ -433,23 +434,27 @@ class RSSCrawler(Crawler):
         audio = self.say("Quelle histoire veux tu écouter ?", "question")
         question = Question(name="Choisis une histoire", audio=audio)
 
-        audio = self.say(channel['title'], "title")
+        if not title:
+            title = channel['title']
+        audio = self.say(title, "title")
         menu = Menu(question=question, options=[])
-        cover = Cover(channel['title'], menu=menu, audio=audio, image=logo)
-        pack = Pack(name=channel['title'], cover=cover)
+        cover = Cover(title, menu=menu, audio=audio, image=logo)
+        pack = Pack(name=title, cover=cover)
 
         stories = []
         for i, entry in enumerate(feed["entries"]):
-            if i == 1:
-                break
+            entry_title = entry['title']
 
-            title = entry['title']
-            audio = self.say(title, "Title - " + title)
-            option = Option(name=title, audio=audio, image=logo)
+            if filter:
+                if not rfilter.match(entry_title.lower()):
+                    continue
+
+            audio = self.say(entry_title, "Title - " + entry_title)
+            option = Option(name=entry_title, audio=audio, image=logo)
             menu.add_option(option)
 
-            audio = self.fetch_media(entry['links'][-1]['href'], title)
-            story = Story(name=title, cover=cover, audio=audio)
+            audio = self.fetch_media(entry['links'][-1]['href'], entry_title)
+            story = Story(name=entry_title, cover=cover, audio=audio)
             stories.append(story)
 
             option.set_ok_transition(story)
@@ -465,7 +470,6 @@ class FranceInterCrawler(Crawler):
 
         page = requests.get(url)
         tree = html.fromstring(page.content)
-        import pdb; pdb.set_trace()
 
         if not title:
             title = tree.xpath('//h1[@class="cover-emission-title"]')[0].text
@@ -519,7 +523,7 @@ class FranceInterCrawler(Crawler):
         pack.generate(output)
 
 
-if __name__ == "__main__":
+def main():
     ssl._create_default_https_context = ssl._create_unverified_context
 
     parser = argparse.ArgumentParser()
@@ -553,3 +557,7 @@ if __name__ == "__main__":
         crawler = RSSCrawler()
 
     crawler.generate_pack(args.url, args.output, **kwargs)
+
+
+if __name__ == "__main__":
+    main()
