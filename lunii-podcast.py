@@ -51,7 +51,10 @@ def fetch_media(url, dir, name):
     urllib.request.urlretrieve(url, output)
     mp3 = os.path.join(dir, name + ".mp3")
     if mp3 != output:
-        run_command(["ffmpeg", "-i", output, "-vn", "-ac", "1", "-acodec",
+        run_command(["ffmpeg",
+                     "-i", output,
+                     "-n",
+                     "-vn", "-ac", "1", "-acodec",
                      "copy", "-filter:a",
                      "volume="+str(STORY_VOLUME_MULTIPLY),
                      # "-c:a", "libvorbis", ogg])
@@ -65,8 +68,11 @@ def say(sentence, dir, name):
     wav = os.path.join(dir, name+".wav")
     run_command(["pico2wave", "-l", "fr-FR", "-w", wav, sentence])
     mp3 = os.path.join(dir, name + ".mp3")
-    run_command(["ffmpeg", "-i", wav, "-filter:a",
+    run_command(["ffmpeg",
+                     "-i", wav,
+                     "-n",
                      "-ac", "1",
+                     "-filter:a",
                      # "-ar", "44100",
                      "adelay=1s,apad=pad_len=16384,"
                      "volume="+str(TTS_VOLUME_MULTIPLY),
